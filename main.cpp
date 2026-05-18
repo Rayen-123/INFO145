@@ -38,7 +38,7 @@ int main() {
     cout << "probar Búsqueda Binaria (Caso de fallo)" << endl;
     // Buscamos un número que seguramente no existe (uno negativo)
     int objetivo_falso = -100;
-    cout << "\nBuscando el numero " << objetivo_falso << " en el Arreglo Lineal..." << endl;
+    cout << "Buscando el numero " << objetivo_falso << " en el Arreglo Lineal..." << endl;
     
     int pos_falso = Caso1::busquedaBinaria(arr_lineal, objetivo_falso);
     if (pos_falso != -1) {
