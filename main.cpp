@@ -2,6 +2,8 @@
 #include <vector>
 #include <string>
 #include "caso1.hpp"
+#include "caso2.hpp"
+#include "caso3.hpp"
 
 using namespace std;
 
@@ -48,6 +50,10 @@ int main() {
     }
 
     cout << "Bytes ocupados por el Arreglo Lineal: " << Caso1::calcularEspacio(arr_lineal) << " bytes" << endl;
+
+
+    //Caso 3
+    Caso3::caso3(/*aqui debe ir el struct del caso2*/, objetivo_existente);
 
     return 0;
 }
