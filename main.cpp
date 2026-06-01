@@ -51,9 +51,59 @@ int main() {
 
     cout << "Bytes ocupados por el Arreglo Lineal: " << Caso1::calcularEspacio(arr_lineal) << " bytes" << endl;
 
+    //Caso 2
+
+    cout << "\n===== CASO 2: GAP CODING =====" << endl;
+
+   size_t b = 3;
+
+   Caso2::GC Gap = Caso2::construir(arr_lineal, b);
+   cout << "Gap Coding construido correctamente." << endl;
+   imprimirArreglo(Gap.GC, "GC");
+   imprimirArreglo(Gap.sample, "Sample");
+
+   // ---------- BUSQUEDA EXITOSA ----------
+   cout << "\nBusqueda Caso 2 (Exito)" << endl;
+   int objetivo_gap = arr_lineal[arr_lineal.size()/2];
+   cout << "Buscando " << objetivo_gap << endl;
+   int pos_gap = Caso2::buscar(estructura, objetivo_gap);
+
+   if(pos_gap != -1){
+       cout << " -> EXITO: encontrado en indice "
+            << pos_gap << endl;
+   }
+   else{
+       cout << " -> ERROR: no encontrado" << endl;
+   }
+
+   // ---------- BUSQUEDA FALLIDA ----------
+   cout << "\nBusqueda Caso 2 (Fallo)" << endl;
+
+   int inexistente = -100;
+
+   int pos_gap_falso =
+       Caso2::buscar(Gap, inexistente);
+
+   if(pos_gap_falso != -1){
+       cout << " -> ERROR: encontro un valor inexistente"
+            << endl;
+   }
+   else{
+       cout << " -> EXITO: retorno -1 correctamente"
+            << endl;
+   }
+
+   // ---------- ESPACIO ----------
+   cout << "\nEspacio usado por Gap Coding: "
+        << Caso2::calcularEspacio(Gap)
+        << " bytes" << endl;
+   
+   
+
+
 
     //Caso 3
-    Caso3::caso3(/*aqui debe ir el struct del caso2*/, objetivo_existente);
+    Caso3::caso3(Gap, objetivo_existente);
 
     return 0;
 }
