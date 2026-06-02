@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <string>
 #include "caso1.hpp"
@@ -17,24 +18,34 @@ void imprimirArreglo(const vector<int>& arr, const string& nombre) {
 }
 
 void benchmark(){
-    // crear archivo csv
+    ofstream archivo("benchmark.csv");
+    if (!archivo.is_open()) {
+        std::cerr << "Error al crear el archivo." << std::endl;
+    }
+    archivo << "Caso, n, Tiempo Construccion (ms), Tiempo Busqueda (ms), Espacio Usado (bytes), Posicion Encontrada\n";
 
-
-    const vector<int> t = {1000, 10000, 50000, 100000};
-    for (int &n : t) {
+    const vector<int> t = {1000, 10000, 100000, 1000000};
+    for (int n : t) {
         //Caso 1
 
         //Caso 2
 
         //Caso 3
-        //Caso3::Resultados m = Caso3::caso3(struct caso2, valor a buscar);
-
+        // Caso3::resultados m = Caso3::caso3(struct del caso caso2, valor a buscar);
+        // archivo << "Caso 3, " << n << ", " << m.buildTime << ", " << m.searchTime << ", " << m.totalBytes << ", " << m.pos << "\n";
     }
     return;
 }
 
 void archivo(const string& rutaArchivo){
-    //leer los datos de un csv
+    //Se lee el archivo que creo que almacena los valores de los arreglos para los casos,
+    // hay que extraerlos y almacenarlos para usarlo en los casos.
+    
+    ifstream archivo(rutaArchivo);
+    if (!archivo.is_open()) {
+        cerr << "Error al abrir el archivo: " << rutaArchivo << endl;
+    }
+
 
     int e = 0, valor = 0;
     while(true){
@@ -59,6 +70,14 @@ void archivo(const string& rutaArchivo){
         }
         if (e == 3){
             //ejecutar caso 3 y mostrar resultados
+            //Caso3::resultados m = Caso3::caso3(struct del caso caso2, valor a buscar);
+            cout << "tamano de entrada:" << endl;
+            cout << "valor a buscar: " << valor << endl;
+            cout << "Tiempo de construccion: " << m.buildTime << " ms" << endl;
+            cout << "Tiempo de busqueda: " << m.searchTime << " ms" << endl;
+            cout << "Espacio usado: " << m.totalBytes << " bytes" << endl
+
+
         }
     }
 }

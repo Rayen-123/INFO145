@@ -26,7 +26,7 @@ el espacio requerido seria la entropia por la cantidad de simbolos, siendo la en
 using namespace std;
 
 namespace Caso3 {
-    struct Resultados {
+    struct resultados {
         double buildTime;
         double searchTime;
         size_t totalBytes;
@@ -187,8 +187,8 @@ namespace Caso3 {
 
 
     //Recibe los datos de el resultado en el caso 2, para comparar utilizando shannon-Fanno
-    Resultados caso3(Caso2::GC& data, int value) {
-        Resultados res;
+    resultados caso3(Caso2::GC& data, int value) {
+        resultados res;
         //Construcion de la estructura y los elemenetos necesarios para la busqueda
         auto startBuild = chrono::high_resolution_clock::now();
 
