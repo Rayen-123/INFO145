@@ -26,6 +26,13 @@ el espacio requerido seria la entropia por la cantidad de simbolos, siendo la en
 using namespace std;
 
 namespace Caso3 {
+    struct Resultados {
+        double buildTime;
+        double searchTime;
+        size_t totalBytes;
+        int pos;
+    };
+
     void set_bit(uint8_t& byte, int pos) {
         byte |= (1 << pos);
     }
@@ -34,9 +41,7 @@ namespace Caso3 {
     }
 
     //Construye un vector con las posiciones de los bits que corresponden a los samples
-    vector<size_t> build_sample_bits(vector<uint8_t>& bitMap, size_t totalBits,unordered_map<int,string>& encodeTable, int b){
-        unordered_map<string,int> decodeTable;
-        for (auto& [key, val] : encodeTable) decodeTable[val] = key;
+    vector<size_t> build_sample_bits(vector<uint8_t>& bitMap, size_t totalBits,unordered_map<string,int>& revTable, int b){
 
         vector<size_t> sampleBits;
         string cur;
@@ -45,7 +50,7 @@ namespace Caso3 {
         for (size_t i = 0; i < totalBits; i++) {
             int bit = (bitMap[i / 8] >> (7 - i % 8)) & 1;
             cur += ('0' + bit);
-            if (decodeTable.count(cur)) {
+            if (revTable.count(cur)) {
                 gapCount++;
                 cur.clear();
                 if (gapCount % b == 0){
@@ -60,8 +65,12 @@ namespace Caso3 {
         int l = 0, h = sample.size() - 1;
         while (l < h) {
             int mid = (l + h + 1) / 2;
-            if (sample[mid] <= value) l = mid;
-            else                      h = mid - 1;
+            if (sample[mid] <= value){
+                l = mid;
+            }
+            else{
+                h = mid - 1; 
+            } 
         }
         return l;
     }
@@ -143,11 +152,7 @@ namespace Caso3 {
     }
 
     //Busca el valor en el vector de bits y devuelve la posicion, o -1 si no se encuentra
-    int find_value(size_t value, size_t totalBits, vector<uint8_t>& bitMap, vector<size_t>& sampleBits, vector<size_t>& sample, unordered_map<int,string>& encodeTable, int l, int b){
-        unordered_map<string,int> decodeTable;
-        for (auto& [key, val] : encodeTable) decodeTable[val] = key;
-
-
+    int find_value(size_t value, size_t totalBits, vector<uint8_t>& bitMap, vector<size_t>& sampleBits, vector<size_t>& sample, unordered_map<string,int>& revTable, int l, int b){
         size_t startBit;
         size_t sum;
         if (l > 0) {
@@ -163,8 +168,8 @@ namespace Caso3 {
         for (size_t i = startBit; i < totalBits; i++) {
             int bit = (bitMap[i / 8] >> (7 - i % 8)) & 1;
             temp += ('0' + bit);
-            if (decodeTable.count(temp)) {
-                sum += decodeTable[temp];
+            if (revTable.count(temp)) {
+                sum += revTable[temp];
                 temp.clear();
 
                 if (sum == value){
@@ -182,30 +187,37 @@ namespace Caso3 {
 
 
     //Recibe los datos de el resultado en el caso 2, para comparar utilizando shannon-Fanno
-    void caso3(Caso2::GC& data, int value) {
-        auto start = chrono::high_resolution_clock::now();
+    Resultados caso3(Caso2::GC& data, int value) {
+        Resultados res;
+        //Construcion de la estructura y los elemenetos necesarios para la busqueda
+        auto startBuild = chrono::high_resolution_clock::now();
 
-        unordered_map<int, string> encodeTable;
-        shannon_fano(data.GC, encodeTable);
+        unordered_map<int, string> Table;
+        shannon_fano(data.GC, Table);
+        unordered_map<string,int> revTable;
+        for (auto& [key, val] : Table) revTable[val] = key;
 
         size_t totalBits = 0;
-        vector<uint8_t> bitMap = encode(data.GC, encodeTable, totalBits);
+        vector<uint8_t> bitMap = encode(data.GC, Table, totalBits);
         vector<size_t> sample(data.sample.begin(), data.sample.end());
-        vector<size_t> sampleBits = build_sample_bits(bitMap, totalBits, encodeTable, data.b);
+        vector<size_t> sampleBits = build_sample_bits(bitMap, totalBits, revTable, data.b);
+
+        auto endBuild = chrono::high_resolution_clock::now();
+
+        //Inicio de la busqueda
+        auto startSearch = chrono::high_resolution_clock::now();
 
         int l = binary_search(sample, value);
-        int pos = find_value(value, totalBits, bitMap, sampleBits, sample, encodeTable, l, data.b);
+        int pos = find_value(value, totalBits, bitMap, sampleBits, sample, revTable, l, data.b);
         
-        auto end = chrono::high_resolution_clock::now();
-        double ms = chrono::duration<double, milli>(end - start).count();
+        auto endSearch = chrono::high_resolution_clock::now();
 
-        cout << "Valor: " << value  << endl;
-        if (pos != -1) {
-            cout << "Encontrado en posicion: [" << pos << "]" << endl;
-        } else {
-            cout << "Valor no encontrado." << endl;
-        }
-        cout << "Bits usados: " << totalBits << " ()" << bitMap.size() << " bytes" << endl;
-        cout << "Tiempo: " << ms << " ms" << endl;
+        //Resultados
+        res.buildTime = chrono::duration<double, milli>(endBuild - startBuild).count();
+        res.searchTime = chrono::duration<double, milli>(endSearch - startSearch).count();
+        res.totalBytes = bitMap.size() + (sampleBits.size() * sizeof(size_t)) + (sample.size() * sizeof(size_t));
+        res.pos = pos;
+
+        return res;
     }
 }

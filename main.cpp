@@ -16,7 +16,62 @@ void imprimirArreglo(const vector<int>& arr, const string& nombre) {
     cout << "]" << endl;
 }
 
-int main() {
+void benchmark(){
+    // crear archivo csv
+
+
+    const vector<int> t = {1000, 10000, 50000, 100000};
+    for (int &n : t) {
+        //Caso 1
+
+        //Caso 2
+
+        //Caso 3
+        //Caso3::Resultados m = Caso3::caso3(struct caso2, valor a buscar);
+
+    }
+    return;
+}
+
+void archivo(const string& rutaArchivo){
+    //leer los datos de un csv
+
+    int e = 0, valor = 0;
+    while(true){
+        int e;
+        cout << "1. Caso 1(Busqueda Binaria)" << endl;
+        cout << "2. Caso 2(Gap Coding)" << endl;
+        cout << "3. Caso 3(Shannon-Fano)" << endl;
+        cout << "4. salir" << endl;
+        cin >> e;
+        
+        if (e == 4){
+            break;
+        }
+
+        cout << "Valor a buscar: ";
+        cin >> valor;
+        if (e == 1){
+            //ejecutar caso 1 y mostrar resultados
+        }
+        if (e == 2){
+            //ejecutar caso 2 y mostrar resultados
+        }
+        if (e == 3){
+            //ejecutar caso 3 y mostrar resultados
+        }
+    }
+}
+int main(int argc, char* argv[]) {
+    // hay que terminar las formas de ejecucion del programa
+    // y pasar la logica de lo que esta en el main a estas :$
+    if (argc == 2 && strcmp(argv[1], "--benchmark") == 0) {
+        benchmark();
+    } 
+    else if (argc == 3 && strcmp(argv[1], "-i") == 0) {
+        archivo(argv[2]);
+    }
+
     cout << "probar distribución lineal" << endl;
     vector<int> arr_lineal = Caso1::generarLineal(15, 5);
     imprimirArreglo(arr_lineal, "Arreglo Lineal");
