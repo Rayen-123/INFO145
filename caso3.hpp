@@ -61,7 +61,7 @@ namespace Caso3 {
         return sampleBits;
     }
 
-    int binary_search(vector<size_t>& sample, size_t value) {
+    int binary_search(vector<int>& sample, int value) {
         int l = 0, h = sample.size() - 1;
         while (l < h) {
             int mid = (l + h + 1) / 2;
@@ -99,8 +99,8 @@ namespace Caso3 {
             size_t origR = r;
             s.pop();
 
-            unsigned int lsum = 0;
-            unsigned int rsum = 0;
+            int lsum = 0;
+            int rsum = 0;
 
             while (l !=r-1) {
                 if (lsum < rsum) {
@@ -152,9 +152,9 @@ namespace Caso3 {
     }
 
     //Busca el valor en el vector de bits y devuelve la posicion, o -1 si no se encuentra
-    int find_value(size_t value, size_t totalBits, vector<uint8_t>& bitMap, vector<size_t>& sampleBits, vector<size_t>& sample, unordered_map<string,int>& revTable, int l, int b){
+    int find_value(int value, size_t totalBits, vector<uint8_t>& bitMap, vector<size_t>& sampleBits, vector<int>& sample, unordered_map<string,int>& revTable, int l, int b){
         size_t startBit;
-        size_t sum;
+        int sum;
         if (l > 0) {
             startBit = sampleBits[l - 1];
             sum = sample[l - 1];
@@ -199,7 +199,6 @@ namespace Caso3 {
 
         size_t totalBits = 0;
         vector<uint8_t> bitMap = encode(data.GC, Table, totalBits);
-        vector<size_t> sample(data.sample.begin(), data.sample.end());
         vector<size_t> sampleBits = build_sample_bits(bitMap, totalBits, revTable, data.b);
 
         auto endBuild = chrono::high_resolution_clock::now();
@@ -207,15 +206,15 @@ namespace Caso3 {
         //Inicio de la busqueda
         auto startSearch = chrono::high_resolution_clock::now();
 
-        int l = binary_search(sample, value);
-        int pos = find_value(value, totalBits, bitMap, sampleBits, sample, revTable, l, data.b);
+        int l = binary_search(data.sample, value);
+        int pos = find_value(value, totalBits, bitMap, sampleBits, data.sample, revTable, l, data.b);
         
         auto endSearch = chrono::high_resolution_clock::now();
 
         //Resultados
         res.buildTime = chrono::duration<double, milli>(endBuild - startBuild).count();
         res.searchTime = chrono::duration<double, milli>(endSearch - startSearch).count();
-        res.totalBytes = bitMap.size() + (sampleBits.size() * sizeof(size_t)) + (sample.size() * sizeof(size_t));
+        res.totalBytes = bitMap.size() + (sampleBits.size() * sizeof(size_t)) + (data.sample.size() * sizeof(int));
         res.pos = pos;
 
         return res;
