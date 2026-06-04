@@ -2,13 +2,16 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <cstring>
+#include <chrono>
+#include <numeric>
 #include "caso1.hpp"
 #include "caso2.hpp"
 #include "caso3.hpp"
 
 using namespace std;
 
-// Función auxiliar para imprimir los arreglos en la consola
+// Helper para imprimir arreglos pequeños si es necesario en depuración
 void imprimirArreglo(const vector<int>& arr, const string& nombre) {
     cout << nombre << ": [";
     for (size_t i = 0; i < arr.size(); ++i) {
@@ -17,167 +20,174 @@ void imprimirArreglo(const vector<int>& arr, const string& nombre) {
     cout << "]" << endl;
 }
 
-void benchmark(){
+// MODO BENCHMARK: Generación automática, medición y exportación a CSV
+void benchmark() {
     ofstream archivo("benchmark.csv");
     if (!archivo.is_open()) {
-        std::cerr << "Error al crear el archivo." << std::endl;
+        cerr << "Error al crear el archivo benchmark.csv" << endl;
+        return;
     }
-    archivo << "Caso, n, Tiempo Construccion (ms), Tiempo Busqueda (ms), Espacio Usado (bytes), Posicion Encontrada\n";
-
-    const vector<int> t = {1000, 10000, 100000, 1000000};
-    for (int n : t) {
-        //Caso 1
-
-        //Caso 2
-
-        //Caso 3
-        // Caso3::resultados m = Caso3::caso3(struct del caso caso2, valor a buscar);
-        // archivo << "Caso 3, " << n << ", " << m.buildTime << ", " << m.searchTime << ", " << m.totalBytes << ", " << m.pos << "\n";
-    }
-    return;
-}
-
-void archivo(const string& rutaArchivo){
-    //Se lee el archivo que creo que almacena los valores de los arreglos para los casos,
-    // hay que extraerlos y almacenarlos para usarlo en los casos.
     
-    ifstream archivo(rutaArchivo);
-    if (!archivo.is_open()) {
-        cerr << "Error al abrir el archivo: " << rutaArchivo << endl;
+    // Encabezados solicitados por el hito
+    archivo << "Caso, n, Tiempo Construccion (ms), Tiempo Busqueda (ms), Espacio Usado (bytes)\n";
+
+    // Tamaños incrementales en potencias de 10
+    const vector<size_t> tamanos = {1000, 10000, 100000, 1000000};
+    const int epsilon = 5;
+    const size_t b = 32; // Salto paramétrico para el Sample
+
+    for (size_t n : tamanos) {
+        cout << "Procesando benchmark para n = " << n << "..." << endl;
+
+        // --- CASO 1 ---
+        auto startBuildC1 = chrono::high_resolution_clock::now();
+        vector<int> arr_lineal = Caso1::generarLineal(n, epsilon);
+        auto endBuildC1 = chrono::high_resolution_clock::now();
+        
+        double buildTimeC1 = chrono::duration<double, milli>(endBuildC1 - startBuildC1).count();
+        size_t espacioC1 = Caso1::calcularEspacio(arr_lineal);
+
+        // Realizar múltiples búsquedas para promediar (exigido por el enunciado)
+        int buscar_c1 = arr_lineal[n / 2]; 
+        auto startSearchC1 = chrono::high_resolution_clock::now();
+        for(int i = 0; i < 100; ++i) {
+            Caso1::busquedaBinaria(arr_lineal, buscar_c1);
+        }
+        auto endSearchC1 = chrono::high_resolution_clock::now();
+        double searchTimeC1 = chrono::duration<double, milli>(endSearchC1 - startSearchC1).count() / 100.0;
+
+        archivo << "Caso 1, " << n << ", " << buildTimeC1 << ", " << searchTimeC1 << ", " << espacioC1 << "\n";
+
+        // --- CASO 2 ---
+        auto startBuildC2 = chrono::high_resolution_clock::now();
+        Caso2::GC estructC2 = Caso2::construir(arr_lineal, b);
+        auto endBuildC2 = chrono::high_resolution_clock::now();
+
+        double buildTimeC2 = chrono::duration<double, milli>(endBuildC2 - startBuildC2).count();
+        size_t espacioC2 = Caso2::calcularEspacio(estructC2);
+
+        auto startSearchC2 = chrono::high_resolution_clock::now();
+        for(int i = 0; i < 100; ++i) {
+            Caso2::buscar(estructC2, buscar_c1);
+        }
+        auto endSearchC2 = chrono::high_resolution_clock::now();
+        double searchTimeC2 = chrono::duration<double, milli>(endSearchC2 - startSearchC2).count() / 100.0;
+
+        archivo << "Caso 2, " << n << ", " << buildTimeC2 << ", " << searchTimeC2 << ", " << espacioC2 << "\n";
+
+        // --- CASO 3 ---
+        // El Caso 3 internamente mide su propia construcción y búsqueda
+        Caso3::resultados resC3 = Caso3::caso3(estructC2, buscar_c1);
+        
+        archivo << "Caso 3, " << n << ", " << resC3.buildTime << ", " << resC3.searchTime << ", " << resC3.totalBytes << "\n";
     }
 
+    archivo.close();
+    cout << "¡Benchmark completado con éxito! Resultados guardados en 'benchmark.csv'." << endl;
+}
 
-    int e = 0, valor = 0;
-    while(true){
-        int e;
-        cout << "1. Caso 1(Busqueda Binaria)" << endl;
-        cout << "2. Caso 2(Gap Coding)" << endl;
-        cout << "3. Caso 3(Shannon-Fano)" << endl;
-        cout << "4. salir" << endl;
-        cin >> e;
-        
-        if (e == 4){
-            break;
+// MODO ARCHIVO: Lee un CSV con enteros y permite búsquedas interactivas
+void archivo(const string& rutaArchivo) {
+    ifstream file(rutaArchivo);
+    if (!file.is_open()) {
+        cerr << "Error al abrir el archivo: " << rutaArchivo << endl;
+        return;
+    }
+
+    vector<int> datosOriginales;
+    string linea;
+    
+    // Extraer datos del CSV (asumiendo un entero por línea o separados por comas/saltos)
+    while (getline(file, linea)) {
+        if (!linea.empty()) {
+            datosOriginales.push_back(stoll(linea)); // Usando stoll por seguridad de rango
         }
+    }
+    file.close();
 
-        cout << "Valor a buscar: ";
-        cin >> valor;
-        if (e == 1){
-            //ejecutar caso 1 y mostrar resultados
-        }
-        if (e == 2){
-            //ejecutar caso 2 y mostrar resultados
-        }
-        if (e == 3){
-            //ejecutar caso 3 y mostrar resultados
-            //Caso3::resultados m = Caso3::caso3(struct del caso caso2, valor a buscar);
-            cout << "tamano de entrada:" << endl;
-            cout << "valor a buscar: " << valor << endl;
-            cout << "Tiempo de construccion: " << m.buildTime << " ms" << endl;
-            cout << "Tiempo de busqueda: " << m.searchTime << " ms" << endl;
-            cout << "Espacio usado: " << m.totalBytes << " bytes" << endl
+    if (datosOriginales.empty()) {
+        cerr << "El archivo no contiene datos válidos." << endl;
+        return;
+    }
 
+    // Asegurar que el arreglo base esté ordenado para que funcionen las búsquedas
+    sort(datosOriginales.begin(), datosOriginales.end());
 
+    // Construir estructuras base
+    size_t b = 32;
+    Caso2::GC estructC2 = Caso2::construir(datosOriginales, b);
+
+    int opcion = 0;
+    int valorBuscado = 0;
+
+    while (true) {
+        cout << "\n========================================" << endl;
+        cout << "Estructuras cargadas con " << datosOriginales.size() << " elementos." << endl;
+        cout << "1. Buscar en Caso 1 (Búsqueda Binaria Estándar)" << endl;
+        cout << "2. Buscar en Caso 2 (Gap Coding)" << endl;
+        cout << "3. Buscar en Caso 3 (Shannon-Fano)" << endl;
+        cout << "4. Salir" << endl;
+        cout << "Seleccione una opción: ";
+        cin >> opcion;
+
+        if (opcion == 4) break;
+
+        cout << "Ingrese el valor entero a buscar: ";
+        cin >> valorBuscado;
+
+        if (opcion == 1) {
+            auto start = chrono::high_resolution_clock::now();
+            int pos = Caso1::busquedaBinaria(datosOriginales, valorBuscado);
+            auto end = chrono::high_resolution_clock::now();
+            double elapsed = chrono::duration<double, milli>(end - start).count();
+
+            if (pos != -1) cout << "-> Encontrado en Caso 1. Posición: " << pos;
+            else cout << "-> Valor NO encontrado en Caso 1.";
+            cout << " Tiempo de búsqueda: " << elapsed << " ms" << endl;
+        } 
+        else if (opcion == 2) {
+            auto start = chrono::high_resolution_clock::now();
+            int pos = Caso2::buscar(estructC2, valorBuscado);
+            auto end = chrono::high_resolution_clock::now();
+            double elapsed = chrono::duration<double, milli>(end - start).count();
+
+            if (pos != -1) cout << "-> Encontrado en Caso 2. Posición: " << pos;
+            else cout << "-> Valor NO encontrado en Caso 2.";
+            cout << " Tiempo de búsqueda: " << elapsed << " ms" << endl;
+        } 
+        else if (opcion == 3) {
+            // Se invoca la lógica de Shannon-Fano diseñada por tu grupo
+            Caso3::resultados m = Caso3::caso3(estructC2, valorBuscado);
+
+            if (m.pos != -1) cout << "-> Encontrado en Caso 3. Posición: " << m.pos;
+            else cout << "-> Valor NO encontrado en Caso 3.";
+            
+            cout << "\n[Métricas Shannon-Fano]:" << endl;
+            cout << "   Tiempo de construcción estructura: " << m.buildTime << " ms" << endl;
+            cout << "   Tiempo de búsqueda específico: " << m.searchTime << " ms" << endl;
+            cout << "   Espacio total estimado de la estructura: " << m.totalBytes << " bytes" << endl;
+        } 
+        else {
+            cout << "Opción inválida." << endl;
         }
     }
 }
+
 int main(int argc, char* argv[]) {
-    // hay que terminar las formas de ejecucion del programa
-    // y pasar la logica de lo que esta en el main a estas :$
+    // Control estricto de los argumentos de ejecución por línea de comandos
     if (argc == 2 && strcmp(argv[1], "--benchmark") == 0) {
         benchmark();
+        return 0;
     } 
     else if (argc == 3 && strcmp(argv[1], "-i") == 0) {
         archivo(argv[2]);
+        return 0;
+    } 
+    else {
+        // Mensaje de ayuda si no se ingresan parámetros válidos
+        cout << "Uso del programa:" << endl;
+        cout << "  Modo Benchmark: " << argv[0] << " --benchmark" << endl;
+        cout << "  Modo Archivo:   " << argv[0] << " -i <ruta_archivo.csv>" << endl;
+        return 1;
     }
-
-    cout << "probar distribución lineal" << endl;
-    vector<int> arr_lineal = Caso1::generarLineal(15, 5);
-    imprimirArreglo(arr_lineal, "Arreglo Lineal");
-
-    cout << "probar distribución normal" << endl;
-    vector<int> arr_normal = Caso1::generarNormal(15, 50, 10);
-    imprimirArreglo(arr_normal, "Arreglo Normal");
-
-    cout << "probar Búsqueda Binaria (Caso de éxito)" << endl;
-    // Extraemos un valor que sabemos que existe (ej. el que quedó en la mitad)
-    int objetivo_existente = arr_lineal[arr_lineal.size() / 2];
-    cout << "Buscando el numero " << objetivo_existente << " en el Arreglo Lineal..." << endl;
-    
-    int pos_encontrado = Caso1::busquedaBinaria(arr_lineal, objetivo_existente);
-    if (pos_encontrado != -1) {
-        cout << " -> EXITO: Numero encontrado en el indice [" << pos_encontrado << "]" << endl;
-    } else {
-        cout << " -> ERROR: El numero no fue encontrado." << endl;
-    }
-
-    cout << "probar Búsqueda Binaria (Caso de fallo)" << endl;
-    // Buscamos un número que seguramente no existe (uno negativo)
-    int objetivo_falso = -100;
-    cout << "Buscando el numero " << objetivo_falso << " en el Arreglo Lineal..." << endl;
-    
-    int pos_falso = Caso1::busquedaBinaria(arr_lineal, objetivo_falso);
-    if (pos_falso != -1) {
-        cout << " -> ERROR: Encontro un numero que no deberia existir." << endl;
-    } else {
-        cout << " -> EXITO: Comportamiento correcto, retorno -1 (No encontrado)." << endl;
-    }
-
-    cout << "Bytes ocupados por el Arreglo Lineal: " << Caso1::calcularEspacio(arr_lineal) << " bytes" << endl;
-
-    //Caso 2
-
-    cout << "\n===== CASO 2: GAP CODING =====" << endl;
-
-   size_t b = 3;
-
-   Caso2::GC Gap = Caso2::construir(arr_lineal, b);
-   cout << "Gap Coding construido correctamente." << endl;
-   imprimirArreglo(Gap.GC, "GC");
-   imprimirArreglo(Gap.sample, "Sample");
-
-   // ---------- BUSQUEDA EXITOSA ----------
-   cout << "\nBusqueda Caso 2 (Exito)" << endl;
-   int objetivo_gap = arr_lineal[arr_lineal.size()/2];
-   cout << "Buscando " << objetivo_gap << endl;
-   int pos_gap = Caso2::buscar(estructura, objetivo_gap);
-
-   if(pos_gap != -1){
-       cout << " -> EXITO: encontrado en indice "
-            << pos_gap << endl;
-   }
-   else{
-       cout << " -> ERROR: no encontrado" << endl;
-   }
-
-   // ---------- BUSQUEDA FALLIDA ----------
-   cout << "\nBusqueda Caso 2 (Fallo)" << endl;
-
-   int inexistente = -100;
-
-   int pos_gap_falso =
-       Caso2::buscar(Gap, inexistente);
-
-   if(pos_gap_falso != -1){
-       cout << " -> ERROR: encontro un valor inexistente"
-            << endl;
-   }
-   else{
-       cout << " -> EXITO: retorno -1 correctamente"
-            << endl;
-   }
-
-   // ---------- ESPACIO ----------
-   cout << "\nEspacio usado por Gap Coding: "
-        << Caso2::calcularEspacio(Gap)
-        << " bytes" << endl;
-   
-   
-
-
-
-    //Caso 3
-    Caso3::caso3(Gap, objetivo_existente);
-
-    return 0;
 }
